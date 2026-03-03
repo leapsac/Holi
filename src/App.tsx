@@ -1,8 +1,18 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, UserCircle, Sparkles } from 'lucide-react';
 
-const COLORS = ['#ff0080', '#7928ca', '#ff4d4d', '#f9cb28', '#00ff87', '#60efff', '#ff1b6b'];
+// --- Constants & Types ---
+
+const COLORS = [
+  '#ff0080', // Pink
+  '#7928ca', // Purple
+  '#ff4d4d', // Red
+  '#f9cb28', // Yellow
+  '#00ff87', // Green
+  '#60efff', // Cyan
+  '#ff1b6b'  // Hot Pink
+];
 
 interface SmokeParticle {
   x: number;
@@ -29,7 +39,7 @@ interface BgParticle {
 
 export default function App() {
   const [stage, setStage] = useState<'entry' | 'experience'>('entry');
-  const [userName, setUserName] = useState('Everyone');
+  const [userName, setUserName] = useState('Sunny');
   const [chargeLevel, setChargeLevel] = useState(0);
   const [isCharging, setIsCharging] = useState(false);
   const [showText, setShowText] = useState(false);
@@ -41,6 +51,8 @@ export default function App() {
   const bgParticlesRef = useRef<BgParticle[]>([]);
   const requestRef = useRef<number>(0);
   const pichkariRef = useRef<HTMLDivElement>(null);
+
+  // --- Background Animation ---
 
   const initBg = useCallback((w: number, h: number) => {
     bgParticlesRef.current = Array.from({ length: 40 }, () => ({
@@ -63,6 +75,7 @@ export default function App() {
     const smokeCtx = smokeCanvas.getContext('2d');
     if (!bgCtx || !smokeCtx) return;
 
+    // Draw Background
     bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
     bgParticlesRef.current.forEach(p => {
       p.x += p.vx;
@@ -82,13 +95,14 @@ export default function App() {
       bgCtx.restore();
     });
 
+    // Draw Smoke
     smokeCtx.clearRect(0, 0, smokeCanvas.width, smokeCanvas.height);
     const smokeParticles = smokeParticlesRef.current;
     for (let i = smokeParticles.length - 1; i >= 0; i--) {
       const s = smokeParticles[i];
       s.x += s.vx;
       s.y += s.vy;
-      s.vx *= 0.97;
+      s.vx *= 0.97; // Friction
       s.vy *= 0.97;
       s.size *= s.growth;
       s.life -= s.decay;
@@ -103,8 +117,11 @@ export default function App() {
       smokeCtx.fill();
       smokeCtx.restore();
 
-      if (s.life <= 0) smokeParticles.splice(i, 1);
+      if (s.life <= 0) {
+        smokeParticles.splice(i, 1);
+      }
     }
+
     requestRef.current = requestAnimationFrame(animate);
   }, []);
 
@@ -120,22 +137,32 @@ export default function App() {
         initBg(w, h);
       }
     };
+
     window.addEventListener('resize', handleResize);
     handleResize();
     requestRef.current = requestAnimationFrame(animate);
+
     return () => {
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(requestRef.current);
     };
   }, [animate, initBg]);
 
+  // --- Interaction Logic ---
+
   const fire = useCallback(() => {
     if (chargeLevel < 10) return;
+
     const rect = pichkariRef.current?.getBoundingClientRect();
     if (!rect) return;
+
     const startX = rect.left + rect.width / 2;
     const startY = rect.top;
+
+    // Hide text for cinematic reveal
     setShowText(false);
+
+    // Create 7-color spray
     const sprayCount = 140;
     for (let i = 0; i < sprayCount; i++) {
       const color = COLORS[i % 7];
@@ -154,9 +181,14 @@ export default function App() {
         alpha: 0.8,
       });
     }
+
     setChargeLevel(0);
     setHasInteracted(true);
-    setTimeout(() => setShowText(true), 1500);
+
+    // Cinematic reveal delay
+    setTimeout(() => {
+      setShowText(true);
+    }, 1500);
   }, [chargeLevel]);
 
   useEffect(() => {
@@ -169,11 +201,15 @@ export default function App() {
     return () => clearInterval(interval);
   }, [isCharging]);
 
+  // --- Render ---
+
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#050505] font-sans select-none">
+      {/* Background Layers */}
       <canvas ref={bgCanvasRef} className="absolute inset-0 z-0 pointer-events-none" />
       <canvas ref={smokeCanvasRef} className="absolute inset-0 z-30 pointer-events-none" />
 
+      {/* UI Layer */}
       <div className="relative z-40 w-full h-full flex flex-col items-center justify-center p-6">
         <AnimatePresence mode="wait">
           {stage === 'entry' ? (
@@ -182,7 +218,7 @@ export default function App() {
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 1.1 }}
-              transition={{ duration: 1 }}
+              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
               className="glass-card bg-white/5 backdrop-blur-3xl border border-white/10 p-12 rounded-[40px] text-center shadow-2xl max-w-md w-full"
             >
               <h1 className="text-6xl md:text-7xl font-bold italic tracking-tighter text-white mb-12 font-serif">
@@ -216,25 +252,27 @@ export default function App() {
               animate={{ opacity: 1 }}
               className="w-full h-full flex flex-col items-center justify-between pt-16 pb-28"
             >
+              {/* Cinematic Text Reveal */}
               <div className="text-center space-y-4 max-w-3xl px-6">
                 <AnimatePresence>
                   {showText && (
                     <motion.div
                       initial={{ opacity: 0, filter: 'blur(20px)', y: 20 }}
                       animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
-                      transition={{ duration: 2 }}
+                      transition={{ duration: 2, ease: "easeOut" }}
                     >
                       <h2 className="text-5xl md:text-7xl font-bold italic tracking-tighter text-white font-serif">
                         HAPPY HOLI
                       </h2>
                       <p className="text-xl md:text-3xl font-light text-white/70 mt-4">
-                        To <span className="text-white font-semibold">{userName}</span> 🌈
+                        Sunny ki taraf se — <span className="text-white font-semibold">{userName}</span> ke liye 🌈
                       </p>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
 
+              {/* Premium Vertical Pichkari */}
               <div className="flex flex-col items-center gap-4">
                 <AnimatePresence>
                   {!hasInteracted && (
@@ -244,7 +282,7 @@ export default function App() {
                       exit={{ opacity: 0 }}
                       className="text-white text-sm font-light tracking-widest uppercase"
                     >
-                      Hold to shoot
+                      Hold to shoot the pichkaari
                     </motion.p>
                   )}
                 </AnimatePresence>
@@ -256,46 +294,59 @@ export default function App() {
                   onTouchStart={(e) => { e.preventDefault(); setIsCharging(true); }}
                   onTouchEnd={() => { setIsCharging(false); fire(); }}
                 >
-                  <motion.div
-                    ref={pichkariRef}
-                    animate={isCharging ? { x: [0, -1, 1, -1, 0], scale: [1, 1.02, 1] } : {}}
-                    transition={{ repeat: Infinity, duration: 0.1 }}
-                    className="flex flex-col items-center"
-                  >
-                    <div className="w-4 h-8 bg-white/30 rounded-t-lg mb-[-2px]" />
-                    
-                    <div className="w-16 md:w-20 h-56 md:h-64 border-4 border-white/20 rounded-[40px] relative bg-white/5 backdrop-blur-md overflow-hidden shadow-2xl">
-                      <div 
-                        className="absolute bottom-0 w-full bg-gradient-to-t from-pink-600 via-purple-600 to-red-500 transition-all duration-75"
-                        style={{ height: `${chargeLevel}%` }}
-                      >
-                        <div className="absolute top-0 left-0 w-full h-4 bg-white/20 blur-sm" />
-                      </div>
-                      
-                      <div className="absolute left-4 top-0 w-2 h-full bg-white/10 blur-[1px]" />
-                    </div>
-
-                    <div 
-                      className="w-3 bg-white/40 transition-all duration-75 relative"
-                      style={{ height: '100px', transform: `translateY(${chargeLevel * 0.8}px)` }}
-                    >
-                      <div className="absolute bottom-[-15px] left-1/2 -translate-x-1/2 w-12 h-4 bg-white rounded-full shadow-lg" />
-                    </div>
-                  </motion.div>
+                <motion.div
+                  ref={pichkariRef}
+                  animate={isCharging ? {
+                    x: [0, -1, 1, -1, 0],
+                    scale: [1, 1.02, 1],
+                  } : {}}
+                  transition={{ repeat: Infinity, duration: 0.1 }}
+                  className="flex flex-col items-center"
+                >
+                  {/* Nozzle */}
+                  <div className="w-4 h-8 bg-white/30 rounded-t-lg mb-[-2px]" />
                   
-                  <AnimatePresence>
-                    {isCharging && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1.5 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-white/10 blur-[100px] -z-10"
-                      />
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
+                  {/* Body */}
+                  <div className="w-16 md:w-20 h-56 md:h-64 border-4 border-white/20 rounded-[40px] relative bg-white/5 backdrop-blur-md overflow-hidden shadow-2xl">
+                    {/* Inner Liquid */}
+                    <div 
+                      className="absolute bottom-0 w-full bg-gradient-to-t from-pink-600 via-purple-600 to-red-500 transition-all duration-75"
+                      style={{ height: `${chargeLevel}%` }}
+                    >
+                      <div className="absolute top-0 left-0 w-full h-4 bg-white/20 blur-sm" />
+                    </div>
+                    
+                    {/* Glass Reflection */}
+                    <div className="absolute left-4 top-0 w-2 h-full bg-white/10 blur-[1px]" />
+                  </div>
 
+                  {/* Handle */}
+                  <div 
+                    className="w-3 bg-white/40 transition-all duration-75 relative"
+                    style={{ 
+                      height: '100px', 
+                      transform: `translateY(${chargeLevel * 0.8}px)` 
+                    }}
+                  >
+                    <div className="absolute bottom-[-15px] left-1/2 -translate-x-1/2 w-12 h-4 bg-white rounded-full shadow-lg" />
+                  </div>
+                </motion.div>
+                
+                {/* Charging Glow */}
+                <AnimatePresence>
+                  {isCharging && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1.5 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 bg-white/10 blur-[100px] -z-10"
+                    />
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+
+            {/* Bottom Message & Controls */}
               <div className="flex flex-col items-center gap-8">
                 <AnimatePresence>
                   {showText && (
@@ -320,7 +371,7 @@ export default function App() {
                       }
                     }}
                     className="p-4 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all border border-white/5"
-                    title="Reset"
+                    title="Reset Experience"
                   >
                     <RotateCcw className="w-6 h-6" />
                   </button>
@@ -333,10 +384,11 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Footer Quote */}
               <div className="absolute bottom-6 left-0 w-full text-center px-4 pointer-events-none">
                 {showText && (
                   <p className="text-[9px] uppercase tracking-[0.25em] text-white/10 font-medium">
-                    Now go celebrate!
+                    Happy Holi! Now go wash that face, you look like a colorful disaster.
                   </p>
                 )}
               </div>
