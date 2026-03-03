@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+@import "tailwindcss";
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  #root {
+    height: 100%;
+    width: 100%;
+  }
+  
+  body {
+    background-color: #050505;
+    color: white;
+    -webkit-font-smoothing: antialiased;
+    font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  }
+}
+
+.glass-card {
+  backdrop-filter: blur(12px);
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tracking-tighter {
+  letter-spacing: -0.05em;
+}
+
+.italic {
+  font-style: italic;
+}
